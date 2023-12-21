@@ -6,7 +6,7 @@ from dqn.replay_memory import ReplayMemory, Transition
 import random 
 import math 
 from torch import nn
-
+from matplotlib import pyplot as plt
 # https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
 class Trainer:
     BATCH_SIZE = 128
@@ -62,7 +62,7 @@ class Trainer:
         # Compute a mask of non-final states and concatenate the batch elements
         # (a final state would've been the one after which simulation ended)
         non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
-                                            batch.next_state)), device=device, dtype=torch.bool)
+                                            batch.next_state)), device=self.device, dtype=torch.bool)
         non_final_next_states = torch.cat([s for s in batch.next_state
                                                     if s is not None])
         state_batch = torch.cat(batch.state)
@@ -95,3 +95,23 @@ class Trainer:
         # In-place gradient clipping
         torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), 100)
         self.optimizer.step()
+    
+    def plot_durations(self, episode_durations, show_result=False):
+        plt.figure(1)
+        durations_t = torch.tensor(episode_durations, dtype=torch.float)
+        if show_result:
+            plt.title('Result')
+        else:
+            plt.clf()
+            plt.title('Training...')
+        plt.xlabel('Episode')
+        plt.ylabel('Duration')
+        plt.plot(durations_t.numpy())
+        # Take 100 episode averages and plot them too
+        if len(durations_t) >= 100:
+            means = durations_t.unfold(0, 100, 1).mean(1).view(-1)
+            means = torch.cat((torch.zeros(99), means))
+            plt.plot(means.numpy())
+
+        plt.pause(0.001)  # pause a bit so that plots are updated
+        plt.savefig('plt/plot.png')
