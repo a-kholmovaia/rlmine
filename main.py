@@ -12,7 +12,7 @@ if __name__ == '__main__':
     # Define the sequence of actions
     script = ['forward'] * 10 + [''] * 40 + ['jump'] * 1 + ['back'] * 15
 
-    env = gym.make('MineRLObtainDiamond-v0')
+    env = gym.make('MineRLTreechop-v0')
 
     env = Monitor(env, 'videos', force=True)
 

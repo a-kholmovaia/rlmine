@@ -7,6 +7,9 @@ import random
 import math 
 from torch import nn
 from matplotlib import pyplot as plt
+from itertools import count
+from dqn.preprocess_obervations import process, parse_action
+
 # https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
 class Trainer:
     BATCH_SIZE = 128
@@ -20,12 +23,9 @@ class Trainer:
 
         # Get number of actions from gym action space
         self.n_actions = env.action_space.n
-        # Get the number of state observations
-        self.state, _ = env.reset()
-        self.n_observations = len(self.state)
 
-        self.policy_net = DQN(self.n_observations, self.n_actions).to(device)
-        self.target_net = DQN(self.n_observations, self.n_actions).to(device)
+        self.policy_net = DQN(1, self.n_actions).to(device)
+        self.target_net = DQN(1, self.n_actions).to(device)
         self.target_net.load_state_dict(self.policy_net.state_dict())
 
         self.optimizer = optim.AdamW(self.policy_net.parameters(), lr=self.LR, amsgrad=True)
@@ -35,11 +35,10 @@ class Trainer:
         self.steps_done = 0
     
     def select_action(self, state):
-        global steps_done
         sample = random.random()
         eps_threshold = self.EPS_END + (self.EPS_START - self.EPS_END) * \
-            math.exp(-1. * steps_done / self.EPS_DECAY)
-        steps_done += 1
+            math.exp(-1. * self.steps_done / self.EPS_DECAY)
+        self.steps_done += 1
         if sample > eps_threshold:
             with torch.no_grad():
                 # t.max(1) will return the largest column value of each row.
@@ -47,7 +46,7 @@ class Trainer:
                 # found, so we pick action with the larger expected reward.
                 return self.policy_net(state).max(1).indices.view(1, 1)
         else:
-            return torch.tensor([[self.env.action_space.sample()]], device=self.device, dtype=torch.long)
+            return torch.tensor([[random.randint(0, self.n_actions)]], device=self.device, dtype=torch.long)
         
     
     def optimize_model(self):
@@ -115,3 +114,48 @@ class Trainer:
 
         plt.pause(0.001)  # pause a bit so that plots are updated
         plt.savefig('plt/plot.png')
+    
+    def train(self, num_episodes=5000):
+        episode_durations = []
+        for i_episode in range(num_episodes):
+            # Initialize the environment and get it's state
+            state = self.env.reset()
+            state = process(state)
+            state = torch.tensor(state, dtype=torch.float32, device=self.device).unsqueeze(0)
+            for t in count():
+                action = self.select_action(state)
+                observation, reward, done, _ = self.env.step(
+                                                                parse_action(
+                                                                    self.env, action.item()
+                                                                    )
+                                                            )
+                reward = torch.tensor([reward], device=self.device)
+
+                if done:
+                    next_state = None
+                else:
+                    observation = process(observation)
+                    next_state = torch.tensor(observation, dtype=torch.float32, device=self.device).unsqueeze(0)
+
+                # Store the transition in memory
+                self.memory.push(state, action, next_state, reward)
+
+                # Move to the next state
+                state = next_state
+
+                # Perform one step of the optimization (on the policy network)
+                self.optimize_model()
+
+                # Soft update of the target network's weights
+                # θ′ ← τ θ + (1 −τ )θ′
+                target_net_state_dict = self.target_net.state_dict()
+                policy_net_state_dict = self.policy_net.state_dict()
+                for key in policy_net_state_dict:
+                    target_net_state_dict[key] = policy_net_state_dict[key]*self.TAU + target_net_state_dict[key]*(1-self.TAU)
+                self.target_net.load_state_dict(target_net_state_dict)
+
+                if done:
+                    episode_durations.append(t + 1)
+                    break
+        print('Complete')
+        self.plot_durations(episode_durations)
