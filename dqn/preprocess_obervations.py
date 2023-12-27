@@ -4,6 +4,7 @@ import torchvision.transforms as transforms
 
 
 transform = transforms.Compose([
+    transforms.ToPILImage(),
     transforms.Grayscale(),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.5], std=[0.5])
@@ -18,6 +19,7 @@ def parse_action(env, action_index):
     """ Returns action dict with the selected action index """
     action_space = env.action_space.noop()
     action = list(action_space.keys())[action_index]
+    print(f'Action index: {action_index}, action: {action}')
     if action == 'camera':
         action_space[action] = [random.randint(-180, 180), random.randint(-180, 180)]
     else:

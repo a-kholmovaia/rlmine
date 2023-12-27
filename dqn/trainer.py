@@ -1,18 +1,18 @@
 from gym import Env
 import torch
 import torch.optim as optim
-from dqn.dqn import DQN
-from dqn.replay_memory import ReplayMemory, Transition
+from dqn import DQN
+from replay_memory import ReplayMemory, Transition
 import random 
 import math 
 from torch import nn
 from matplotlib import pyplot as plt
 from itertools import count
-from dqn.preprocess_obervations import process, parse_action
+from preprocess_obervations import process, parse_action
 
 # https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
 class Trainer:
-    BATCH_SIZE = 128
+    BATCH_SIZE = 32
     GAMMA = 0.99
     EPS_START = 0.9
     EPS_END = 0.05
@@ -22,8 +22,10 @@ class Trainer:
     def __init__(self, env: Env, device: torch.device):
 
         # Get number of actions from gym action space
-        self.n_actions = env.action_space.n
-
+        self.n_actions = len(env.action_space.noop().keys())
+        print(env.action_space.noop())
+        print(f'Number of actions: {self.n_actions}')
+        self.env = env
         self.policy_net = DQN(1, self.n_actions).to(device)
         self.target_net = DQN(1, self.n_actions).to(device)
         self.target_net.load_state_dict(self.policy_net.state_dict())
@@ -46,7 +48,7 @@ class Trainer:
                 # found, so we pick action with the larger expected reward.
                 return self.policy_net(state).max(1).indices.view(1, 1)
         else:
-            return torch.tensor([[random.randint(0, self.n_actions)]], device=self.device, dtype=torch.long)
+            return torch.tensor([[random.randint(0, self.n_actions-1)]], device=self.device, dtype=torch.long)
         
     
     def optimize_model(self):
@@ -153,7 +155,7 @@ class Trainer:
                 for key in policy_net_state_dict:
                     target_net_state_dict[key] = policy_net_state_dict[key]*self.TAU + target_net_state_dict[key]*(1-self.TAU)
                 self.target_net.load_state_dict(target_net_state_dict)
-
+                print(f'Episode: {i_episode}, Step: {t}, Action: {action}, Reward: {reward.item()}')
                 if done:
                     episode_durations.append(t + 1)
                     break
