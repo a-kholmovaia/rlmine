@@ -2,6 +2,5 @@
 Explaining RL Agents in Minecraft (in progress). Comparing traditional RL approaches and LLM-based ones. 
 To-Do
 - [x] dqn framework
-- [ ] preprocessing module
-- [ ] pipeline with minecraft 
-- [ ] pipeline with minecraft 
+- [x] preprocessing module
+- [x] pipeline with minecraft for TreeChop

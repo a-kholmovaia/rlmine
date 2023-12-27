@@ -2,6 +2,7 @@ import minerl
 import itertools
 import time
 import gym
+from dqn.trainer import Trainer
 
 def step_data(environment='MineRLObtainDiamondDense-v0'):
     d = minerl.data.make(environment)
@@ -16,4 +17,5 @@ def step_data(environment='MineRLObtainDiamondDense-v0'):
 
 if __name__ == '__main__':
     env = gym.make('MineRLTreechop-v0')
-    
+    trainer = Trainer(env, 'cuda')
+    trainer.train()    

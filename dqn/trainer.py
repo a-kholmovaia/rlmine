@@ -87,7 +87,7 @@ class Trainer:
         # Compute Huber loss
         criterion = nn.SmoothL1Loss()
         loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1))
-
+        print(f'Loss: {loss.item()}')
         # Optimize the model
         self.optimizer.zero_grad()
         loss.backward()
