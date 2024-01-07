@@ -8,7 +8,7 @@ import math
 from torch import nn
 from matplotlib import pyplot as plt
 from itertools import count
-from preprocess_obervations import process, parse_action
+from dqn.preprocess_observations import process_state, parse_action_ind2dict
 
 # https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
 class Trainer:
@@ -122,12 +122,12 @@ class Trainer:
         for i_episode in range(num_episodes):
             # Initialize the environment and get it's state
             state = self.env.reset()
-            state = process(state)
+            state = process_state(state)
             state = torch.tensor(state, dtype=torch.float32, device=self.device).unsqueeze(0)
             for t in count():
                 action = self.select_action(state)
                 observation, reward, done, _ = self.env.step(
-                                                                parse_action(
+                                                                parse_action_ind2dict(
                                                                     self.env, action.item()
                                                                     )
                                                             )
@@ -136,7 +136,7 @@ class Trainer:
                 if done:
                     next_state = None
                 else:
-                    observation = process(observation)
+                    observation = process_state(observation)
                     next_state = torch.tensor(observation, dtype=torch.float32, device=self.device).unsqueeze(0)
 
                 # Store the transition in memory

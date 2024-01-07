@@ -11,11 +11,11 @@ transform = transforms.Compose([
 ])
 
     
-def process(state):
+def process_state(state):
     """ Preprocess observation """
     return transform(state["pov"])
 
-def parse_action(env, action_index):
+def parse_action_ind2dict(env, action_index):
     """ Returns action dict with the selected action index """
     action_space = env.action_space.noop()
     action = list(action_space.keys())[action_index]
@@ -25,7 +25,25 @@ def parse_action(env, action_index):
     else:
         action_space[action] = 1
     return action_space
-    
+
+def parse_action2ind(env, actions):
+    """ Returns action index for a selected action """
+    action_space = env.action_space.noop()
+    action = None
+    action_idx = []
+    for d in actions:
+        for i in d.items():
+            if i[0] != "camera":
+                if i[1] > 1:
+                    action = i[1]
+                    break
+        if action == None:
+            action = "camera"
+        action_ind = list(action_space.keys()).index(action)
+        action_idx.append(action_ind)
+    return action_idx
+
+
 
 
     
