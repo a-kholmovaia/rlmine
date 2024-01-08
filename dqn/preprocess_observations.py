@@ -4,16 +4,21 @@ import torchvision.transforms as transforms
 
 
 transform = transforms.Compose([
-    transforms.ToPILImage(),
     transforms.Grayscale(),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.5], std=[0.5])
 ])
 
     
+def process_states_batch(state):
+    """ Preprocess observation batches"""
+    images = torch.tensor(state['pov'], dtype=torch.float32).squeeze().transpose(1, -1)
+    processed_state = [transform(transforms.ToPILImage()(x_)) for x_ in images]
+    return torch.cat(processed_state)
+
 def process_state(state):
     """ Preprocess observation """
-    return transform(state["pov"])
+    return transform(transforms.ToPILImage()(state['pov']))
 
 def parse_action_ind2dict(env, action_index):
     """ Returns action dict with the selected action index """
@@ -26,16 +31,16 @@ def parse_action_ind2dict(env, action_index):
         action_space[action] = 1
     return action_space
 
-def parse_action2ind(env, actions):
+def parse_action2ind(env, actions:dict, batch_size:int):
     """ Returns action index for a selected action """
     action_space = env.action_space.noop()
-    action = None
     action_idx = []
-    for d in actions:
-        for i in d.items():
+    for j in range(batch_size):
+        action = None
+        for i in actions.items():
             if i[0] != "camera":
-                if i[1] > 1:
-                    action = i[1]
+                if i[1][j][0] > 0:
+                    action = i[0]
                     break
         if action == None:
             action = "camera"

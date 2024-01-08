@@ -8,7 +8,7 @@ import math
 from torch import nn
 from matplotlib import pyplot as plt
 from itertools import count
-from dqn.preprocess_observations import process_state, parse_action_ind2dict
+from preprocess_observations import process_state, parse_action_ind2dict
 
 # https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
 class Trainer:
