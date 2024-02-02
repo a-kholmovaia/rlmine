@@ -4,7 +4,6 @@ import torchvision.transforms as transforms
 
 
 transform = transforms.Compose([
-    transforms.Grayscale(),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.5], std=[0.5])
 ])
@@ -18,15 +17,17 @@ def process_states_batch(state):
 
 def process_state(state):
     """ Preprocess observation """
-    return transform(transforms.ToPILImage()(state['pov']))
+    tranformed_state = transform(transforms.ToPILImage()(state['pov']))
+    return torch.tensor(tranformed_state, dtype=torch.float32).unsqueeze(0)
 
 def parse_action_ind2dict(env, action_index):
     """ Returns action dict with the selected action index """
     action_space = env.action_space.noop()
     action = list(action_space.keys())[action_index]
-    print(f'Action index: {action_index}, action: {action}')
+    print(f'Action: {action}')
     if action == 'camera':
-        action_space[action] = [random.randint(-180, 180), random.randint(-180, 180)]
+        #action_space[action] = [random.randint(-180, 180), random.randint(-180, 180)]
+        action_space['attack'] = 1
     else:
         action_space[action] = 1
     return action_space

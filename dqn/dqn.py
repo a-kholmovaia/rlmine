@@ -1,61 +1,70 @@
 from torch import nn
-
-
+import torch
+import random
+import math
 class DQN(nn.Module):
+    EPS_START = 0.5
+    EPS_END = 0.05
+    EPS_DECAY = 1000
 
-    def __init__(self, n_observations, n_actions):
+    def __init__(self, env, input_dim, n_actions=10):
         super(DQN, self).__init__()
-        self.conv1 = nn.Conv2d(n_observations, 64, kernel_size=(3,3), stride=1, padding=1)
-        self.act1 = nn.ReLU()
-        self.dropc1 = nn.Dropout(0.3)
- 
-        self.conv2 = nn.Conv2d(64, 32, kernel_size=(3,3), stride=1, padding=1)
-        self.act2 = nn.ReLU()
-        self.dropc2 = nn.Dropout(0.3)
+        self.env = env
+        self.input_dim = input_dim
+        self.n_actions = n_actions
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.cnn_base = nn.Sequential(
+            nn.Conv2d(input_dim[0], 32, kernel_size=8, stride=4),
+            nn.ReLU(),
+            nn.Dropout(0.3),
 
-        self.conv3 = nn.Conv2d(32, 16, kernel_size=(3,3), stride=1, padding=1)
-        self.act3 = nn.ReLU()
-        self.pool = nn.MaxPool2d(kernel_size=(2, 2))
- 
-        self.flat = nn.Flatten()
+            nn.Conv2d(32, 64, kernel_size=4, stride=2),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+    
+            nn.Conv2d(64, 128, kernel_size=3, stride=1),
+            nn.ReLU(),
+            nn.Dropout(0.3),
 
-        self.fc1 = nn.Linear(16384, 1024)
-        self.act1 = nn.ReLU()
-        self.drop1 = nn.Dropout(0.5)
+            nn.Conv2d(128, 128, kernel_size=3, stride=1),
+            nn.ReLU(),
+            nn.Dropout(0.3),
 
-        self.fc2 = nn.Linear(1024, 512)
-        self.act2 = nn.ReLU()
-        self.drop2 = nn.Dropout(0.5)
- 
-        self.fc3 = nn.Linear(512, 256)
-        self.act3 = nn.ReLU()
-        self.drop3 = nn.Dropout(0.5)
- 
-        self.fc4 = nn.Linear(256, n_actions)
+            nn.MaxPool2d(kernel_size=(2, 2)),
+
+            nn.Flatten()
+        )
+
+        self.fc_input_dim = self.feature_size()
+        print(f'CNN feature size: {self.fc_input_dim}')
+        self.fc_head = nn.Sequential(
+            nn.Linear(self.fc_input_dim, 128),
+            nn.ReLU(),
+            nn.Linear(128, 256),
+            nn.ReLU(),
+            nn.Linear(256, self.n_actions)
+        )
  
     def forward(self, x):
-        # input 3x32x32, output 32x32x32
-        x = self.act1(self.conv1(x))
-        x = self.dropc1(x)
-        # input 32x32x32, output 32x32x32
-        x = self.act2(self.conv2(x))
-        x = self.dropc2(x)
-        x = self.act3(self.conv3(x))
-        # input 32x32x32, output 32x16x16
-        x = self.pool(x)
-        # input 32x16x16, output 8192
-        x = self.flat(x)
+        cnn_features = self.cnn_base(x)
+        return self.fc_head(cnn_features)
 
-        # input 8192, output 512
-        x = self.act1(self.fc1(x))
-        x = self.drop1(x)
-
-        x = self.act2(self.fc2(x))
-        x = self.drop2(x)
+    
+    def get_action(self, state, steps_done: int):
+        sample = random.random()
+        eps_threshold = self.EPS_END + (self.EPS_START - self.EPS_END) * \
+            math.exp(-1. * steps_done / self.EPS_DECAY)
+        if sample > eps_threshold:
+            with torch.no_grad():
+                # t.max(1) will return the largest column value of each row.
+                # second column on max result is index of where max element was
+                # found, so we pick action with the larger expected reward.
+                return self.forward(state).max(1).indices.view(1, 1)
+        else:
+            return torch.tensor([[random.randint(0, self.n_actions-1)]], device=self.device, dtype=torch.long)
         
-        x = self.act3(self.fc3(x))
-        x = self.drop3(x)
-        # input 512, output 10
-        x = self.fc4(x)
 
-        return x
+        self.steps_done += 1
+    
+    def feature_size(self):
+        return self.cnn_base(torch.autograd.Variable(torch.zeros(1, *self.input_dim))).view(1,-1).size(1)

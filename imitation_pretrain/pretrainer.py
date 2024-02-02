@@ -7,7 +7,7 @@ from tqdm import tqdm
 import gym
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'dqn'))
 from dqn import DQN
-from preprocess_observations import process_states_batch, parse_action2ind
+from preprocess_observations import process_states_batch, parse_action2ind, process_state
 
 class Pretrainer:
     def __init__(
@@ -17,7 +17,12 @@ class Pretrainer:
         self.data = minerl.data.make(env_name, data_dir='data', num_workers=1)
         self.env = gym.make(env_name)
         self.device = device
-        self.model = DQN(1, 9).to(device)
+        self.n_actions = len(self.env.action_space.noop().keys())
+        print(f'Number of actions: {self.n_actions}')
+
+        state = process_state(self.env.reset())
+        print(f'Shape of observations: {state[0].shape}')
+        self.model = DQN(self.env, list(state[0].shape), self.n_actions).to(self.device)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.0001)
         self.criterion = nn.CrossEntropyLoss()
 
