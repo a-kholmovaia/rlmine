@@ -10,9 +10,9 @@ transform = transforms.Compose([
 
     
 def process_states_batch(state):
-    """ Preprocess observation batches"""
+    """ Preprocess observation batches"""#
     images = torch.tensor(state['pov'], dtype=torch.float32).squeeze().transpose(1, -1)
-    processed_state = [transform(transforms.ToPILImage()(x_)) for x_ in images]
+    processed_state = [transform(transforms.ToPILImage()(x_)).unsqueeze(0) for x_ in images]
     return torch.cat(processed_state)
 
 def process_state(state):
@@ -26,8 +26,8 @@ def parse_action_ind2dict(env, action_index):
     action = list(action_space.keys())[action_index]
     print(f'Action: {action}')
     if action == 'camera':
-        #action_space[action] = [random.randint(-180, 180), random.randint(-180, 180)]
-        action_space['attack'] = 1
+        action_space[action] = [random.randint(-180, 180), random.randint(-180, 180)]
+        #action_space['attack'] = 1
     else:
         action_space[action] = 1
     return action_space

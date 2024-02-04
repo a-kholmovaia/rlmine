@@ -7,8 +7,8 @@ import os
 import sys
 
 if __name__ == '__main__':
-    env = gym.make('MineRLTreechop-v0')
+    env = gym.make('MineRLNavigateDense-v0')
     path = 'pretrained_models/MineRLTreechop-v0_cnn_pretrained10.pt'
     #path = None
     trainer = Trainer(env, 'cuda')
-    trainer.train(num_episodes=1000)    
+    trainer.train(num_episodes=500)    

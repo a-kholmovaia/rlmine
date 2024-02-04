@@ -26,7 +26,7 @@ class DQN(nn.Module):
             nn.ReLU(),
             nn.Dropout(0.3),
 
-            nn.Conv2d(128, 128, kernel_size=3, stride=1),
+            nn.Conv2d(128, 256, kernel_size=3, stride=1),
             nn.ReLU(),
             nn.Dropout(0.3),
 

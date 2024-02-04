@@ -111,7 +111,7 @@ class Trainer:
                     target_net_state_dict[key] = policy_net_state_dict[key]*self.TAU + target_net_state_dict[key]*(1-self.TAU)
                 self.target_net.load_state_dict(target_net_state_dict)
                 print(f'Episode: {i_episode}, Step: {t}, Reward: {reward_episode}')
-                if done or t > 10_000:
+                if done or t > 100_000:
                     cum_rewards.append(reward_episode)
                     episode_durations.append(t)
                     break
@@ -123,4 +123,4 @@ class Trainer:
              }
             )
         meta.to_csv('meta_dqn_10ms.csv')
-        torch.save(self.target_net.state_dict(), 'treechop_dqn_10ms.pt')
+        torch.save(self.target_net.state_dict(), 'MineRLNavigateDense_dqn_10ms.pt')
