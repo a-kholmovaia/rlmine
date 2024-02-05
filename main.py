@@ -13,11 +13,12 @@ logging.disable(logging.ERROR)
 
 if __name__ == '__main__':
     PATH = 'imitation_pretrain/MineRLTreechop-v0_cnn_pretrained.pt'
-    # Define the sequence of actions
-    model = DQN(1,9).to('cuda')
-    model.load_state_dict(torch.load(PATH))
-
     env = gym.make('MineRLTreechop-v0')
+    # Define the sequence of actions
+    n_actions = len(env.action_space.noop().keys())
+    state = process_state(env.reset())
+    model = DQN(env, list(state[0].shape), n_actions).to('cuda')
+    model.load_state_dict(torch.load(PATH))
 
     env = Monitor(env, 'videos', force=True)
 
